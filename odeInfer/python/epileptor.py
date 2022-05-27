@@ -39,6 +39,7 @@ def epileptor(x1, y1, z, x2, y2, u):
     uDot = -gamma * (u - (.1 * x1))
 
     return x1Dot, y1Dot, zDot, x2Dot, y2Dot, uDot
+
 # %%
 
 x1s = np.linspace(0,100, 10)
@@ -48,8 +49,9 @@ x2s = np.linspace(0,100, 10)
 y2s = np.linspace(0,100, 10)
 us = np.linspace(0,100, 10)
 
-x = [(x1, y1, z, x2, y2, u) for x1 in x1s for y1 in y1s for z in zs for x2 in x2s for y2 in y2s for u in us]
-x_dot = [epileptor(*i) for i in x]
+x = [np.array((x1, y1, z, x2, y2, u)) for x1 in x1s for y1 in y1s for z in zs for x2 in x2s for y2 in y2s for u in us]
+x_dot = [np.array(epileptor(*i)).reshape((1,6)) for i in x]
+x = [i.reshape((1,6)) for i in x]
 
 # %%
 
@@ -57,3 +59,5 @@ model = ps.SINDy()
 model.fit(x, t = None, x_dot=x_dot, multiple_trajectories=True)
 model.print()
 
+
+# %%
