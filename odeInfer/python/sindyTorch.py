@@ -84,7 +84,7 @@ basisFunctions = [
     lambda x : x[2] ** 2
 ]
 
-def train_loop(dataloader, models, optimizers):
+def train_loop(dataloader, models, optimizers, regLambda):
     size = len(dataloader.dataset)
 
     for batch, (X, y) in enumerate(dataloader):
@@ -93,13 +93,13 @@ def train_loop(dataloader, models, optimizers):
             optimizer = optimizers[modelIndex]
 
             # Compute prediction and loss
-            pred = thisModel(Variable(X.cuda()))
+            pred = thisModel(Variable(X.cuda())).squeeze()
 
             regLoss = 0
             for param in thisModel.parameters():
                 regLoss += torch.sum(torch.abs(param))
 
-            loss = torch.nn.MSELoss()(pred, Variable(y[:, modelIndex].cuda())) + regLoss
+            loss = torch.nn.MSELoss()(pred, Variable(y[:, modelIndex].cuda())) + (regLambda * regLoss)
 
             # Backpropagation
             optimizer.zero_grad()
@@ -145,6 +145,7 @@ class linearRegression(torch.nn.Module):
 odeIndex = 1
 learningRate = .01
 epochs = 10
+regLambda = 0
 
 dataloader, systemDim = dataloaderGet(odeIndex, basisFunctions)
 numBasisFunctions = len(basisFunctions)
@@ -156,8 +157,9 @@ optimizers = [torch.optim.SGD(thisModel.parameters(), lr=learningRate) for thisM
 
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
-    train_loop(dataloader, models, optimizers)
+    train_loop(dataloader, models, optimizers, regLambda)
 print("Done!")
 
+regResult = [list(i.parameters())[0][0].cpu().detach().numpy() for i in models]
 
 # %%
