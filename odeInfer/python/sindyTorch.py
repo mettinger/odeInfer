@@ -60,9 +60,9 @@ class epileptorDataset(Dataset):
         systemDim = len(step)
         numBasis = len(basisFunctions)
         grid = gridGet(bounds, step)
-        xDot = [np.array(odeSystem(*i)).reshape((1, systemDim)) for i in grid]
+        xDot = [np.array(odeSystem(*i)) for i in grid]
 
-        self.x = torch.Tensor([np.array([f(i) for f in basisFunctions]).reshape((1, numBasis)) for i in grid])
+        self.x = torch.Tensor([np.array([f(i) for f in basisFunctions]) for i in grid])
         self.xDot = torch.Tensor(xDot)
 
     def __len__(self):
@@ -84,7 +84,7 @@ basisFunctions = [
     lambda x : x[2] ** 2
 ]
 
-def train_loop(dataloader, models, loss_fn, optimizers):
+def train_loop(dataloader, models, optimizers):
     size = len(dataloader.dataset)
 
     for batch, (X, y) in enumerate(dataloader):
@@ -94,7 +94,12 @@ def train_loop(dataloader, models, loss_fn, optimizers):
 
             # Compute prediction and loss
             pred = thisModel(Variable(X.cuda()))
-            loss = loss_fn(pred, Variable(y[:,:, modelIndex].cuda()))
+
+            regLoss = 0
+            for param in thisModel.parameters():
+                regLoss += torch.sum(torch.abs(param))
+
+            loss = torch.nn.MSELoss()(pred, Variable(y[:, modelIndex].cuda())) + regLoss
 
             # Backpropagation
             optimizer.zero_grad()
@@ -125,6 +130,7 @@ def dataloaderGet(odeIndex, basisFunctions):
     systemDim = len(steps)
     return dataloader, systemDim
 
+
 class linearRegression(torch.nn.Module):
     def __init__(self, inputSize, outputSize):
         super(linearRegression, self).__init__()
@@ -144,15 +150,13 @@ dataloader, systemDim = dataloaderGet(odeIndex, basisFunctions)
 numBasisFunctions = len(basisFunctions)
 models = [linearRegression(numBasisFunctions, 1).cuda() for i in range(systemDim)]
 
-# change loss function for l1!
-lossFunction = torch.nn.MSELoss() 
 optimizers = [torch.optim.SGD(thisModel.parameters(), lr=learningRate) for thisModel in models]
 
 #%%
 
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
-    train_loop(dataloader, models, lossFunction, optimizers)
+    train_loop(dataloader, models, optimizers)
 print("Done!")
 
 
