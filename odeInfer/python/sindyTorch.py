@@ -163,6 +163,7 @@ def parseSolution(regResult, functionSymbols, ratioCutoff):
 
 # %%
 
+# SET UP PARAMETERS FOR TRAINING, A LINEAR MODEL AND OPTIMIZER FOR EACH ODE EQUATION
 odeIndex = 1
 learningRate = .01
 epochs = 10
@@ -177,6 +178,7 @@ optimizers = [torch.optim.SGD(thisModel.parameters(), lr=learningRate) for thisM
 
 #%%
 
+# TRAIN THE MODELS AND EXTRACT THE COEFFICIENTS
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     train_loop(dataloader, models, optimizers, l1_lambda)
@@ -186,6 +188,7 @@ regressionResult = [list(i.parameters())[0][0].cpu().detach().numpy() for i in m
 
 #%%
 
+# PRETTY PRINT THE ODE SYSTEM
 ratioCutoff = 50
 parsedSolution = parseSolution(regressionResult, functionSymbols, ratioCutoff)
 parsedSolution
