@@ -43,6 +43,7 @@ def epileptor(x1, y1, z, x2, y2, u):
 
     return x1Dot, y1Dot, zDot, x2Dot, y2Dot, uDot
 
+# LORENZE MODEL FOR TESTING
 def lorenz(x, y, z):
     sigma, rho, beta = 10, 8/3, 28
     xDot = sigma * (y - x)
@@ -50,6 +51,7 @@ def lorenz(x, y, z):
     zDot = (x * y) - (beta * z)
     return xDot, yDot, zDot
 
+# MAKE A GRID WITH BOUNDS AND STEPSIZE FOR EACH VARIABLE
 def gridGet(bounds, steps):
     x = [np.linspace(bounds[i][0], bounds[i][1], steps[i]) for i in range(len(steps))]
     return list(itertools.product(*x))
@@ -71,7 +73,8 @@ class epileptorDataset(Dataset):
     def __getitem__(self, idx):
         return self.x[idx,:], self.xDot[idx,:]
 
-def train_loop(dataloader, models, optimizers, regLambda):
+# MAIN TRAINING LOOP
+def train_loop(dataloader, models, optimizers, l1_lambda):
     size = len(dataloader.dataset)
 
     for batch, (X, y) in enumerate(dataloader):
@@ -82,11 +85,12 @@ def train_loop(dataloader, models, optimizers, regLambda):
             # Compute prediction and loss
             pred = thisModel(Variable(X.cuda())).squeeze()
 
-            regLoss = 0
+            regularizationLoss = 0
             for param in thisModel.parameters():
-                regLoss += torch.sum(torch.abs(param))
+                regularizationLoss += torch.sum(torch.abs(param))
+            regularizationLoss = (l1_lambda * regularizationLoss)
 
-            loss = torch.nn.MSELoss()(pred, Variable(y[:, modelIndex].cuda())) + (regLambda * regLoss)
+            loss = torch.nn.MSELoss()(pred, Variable(y[:, modelIndex].cuda())) + regularizationLoss
 
             # Backpropagation
             optimizer.zero_grad()
@@ -97,6 +101,7 @@ def train_loop(dataloader, models, optimizers, regLambda):
                 loss, current = loss.item(), batch * len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
+# SPECIFY SYSTEM, COMPUTE TRAINING DATA, MAKE DATALOADER
 def dataloaderGet(odeIndex, basisFunctions):
 
     if odeIndex == 0:
@@ -117,7 +122,7 @@ def dataloaderGet(odeIndex, basisFunctions):
     systemDim = len(steps)
     return dataloader, systemDim
 
-
+# LINEAR REGRESSION FOR EACH EQUATION IN ODE SYSTEM
 class linearRegression(torch.nn.Module):
     def __init__(self, inputSize, outputSize):
         super(linearRegression, self).__init__()
@@ -127,6 +132,7 @@ class linearRegression(torch.nn.Module):
         out = self.linear(x)
         return out
 
+# MAKE THE LISTS OF POLYNOMIAL FUNCTIONS AND STRING SYMBOLS
 def polyLibraryGet(nVar, maxDegree):
     functions = [lambda x: 1]
     symbols = ['1']
@@ -139,6 +145,7 @@ def polyLibraryGet(nVar, maxDegree):
             symbols.append(thisSymbol[:-2].replace('*', ' '))
     return functions, symbols
 
+# CONVERT THE REGRESSION SOLUTION TO READABLE STRINGS
 def parseSolution(regResult, functionSymbols, ratioCutoff):
     nVars = len(regResult)
     odes = []
@@ -159,7 +166,7 @@ def parseSolution(regResult, functionSymbols, ratioCutoff):
 odeIndex = 1
 learningRate = .01
 epochs = 10
-regLambda = 0
+l1_lambda = 0
 
 basisFunctions, functionSymbols = polyLibraryGet(3, 2)
 dataloader, systemDim = dataloaderGet(odeIndex, basisFunctions)
@@ -172,15 +179,15 @@ optimizers = [torch.optim.SGD(thisModel.parameters(), lr=learningRate) for thisM
 
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
-    train_loop(dataloader, models, optimizers, regLambda)
+    train_loop(dataloader, models, optimizers, l1_lambda)
 print("Done!")
 
-regResult = [list(i.parameters())[0][0].cpu().detach().numpy() for i in models]
+regressionResult = [list(i.parameters())[0][0].cpu().detach().numpy() for i in models]
 
 #%%
 
 ratioCutoff = 50
-parsedSolution = parseSolution(regResult, functionSymbols, ratioCutoff)
+parsedSolution = parseSolution(regressionResult, functionSymbols, ratioCutoff)
 parsedSolution
 
 # %%
