@@ -56,11 +56,11 @@ def gridGet(bounds, steps):
     x = [np.linspace(bounds[i][0], bounds[i][1], steps[i]) for i in range(len(steps))]
     return list(itertools.product(*x))
 
-class epileptorDataset(Dataset):
+class datasetGet(Dataset):
     def __init__(self, odeSystem, bounds, step, basisFunctions):
 
-        systemDim = len(step)
-        numBasis = len(basisFunctions)
+        #systemDim = len(step)
+        #numBasis = len(basisFunctions)
         grid = gridGet(bounds, step)
         xDot = [np.array(odeSystem(*i)) for i in grid]
 
@@ -116,7 +116,7 @@ def dataloaderGet(odeIndex, basisFunctions):
         batchSize = 64
 
 
-    dataset = epileptorDataset(odeSystem, bounds, steps, basisFunctions)
+    dataset = datasetGet(odeSystem, bounds, steps, basisFunctions)
     dataloader = DataLoader(dataset, batch_size=batchSize)
 
     systemDim = len(steps)
