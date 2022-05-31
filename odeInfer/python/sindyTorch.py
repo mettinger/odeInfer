@@ -179,22 +179,8 @@ regResult = [list(i.parameters())[0][0].cpu().detach().numpy() for i in models]
 
 #%%
 
-ratioCutoff = 10
-parseSolution(regResult, functionSymbols, ratioCutoff)
+ratioCutoff = 50
+parsedSolution = parseSolution(regResult, functionSymbols, ratioCutoff)
+parsedSolution
 
-
-#%%
-'''
-basisFunctions = [
-    lambda x : 1,
-    lambda x : x[0],
-    lambda x : x[1],
-    lambda x : x[2],
-    lambda x : x[0] ** 2,
-    lambda x : x[0] * x[1],
-    lambda x : x[0] * x[2],
-    lambda x : x[1] ** 2,
-    lambda x : x[1] * x[2],
-    lambda x : x[2] ** 2
-]
-'''
+# %%
