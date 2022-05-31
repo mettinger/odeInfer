@@ -71,19 +71,6 @@ class epileptorDataset(Dataset):
     def __getitem__(self, idx):
         return self.x[idx,:], self.xDot[idx,:]
 
-basisFunctions = [
-    lambda x : 1,
-    lambda x : x[0],
-    lambda x : x[1],
-    lambda x : x[2],
-    lambda x : x[0] ** 2,
-    lambda x : x[0] * x[1],
-    lambda x : x[0] * x[2],
-    lambda x : x[1] ** 2,
-    lambda x : x[1] * x[2],
-    lambda x : x[2] ** 2
-]
-
 def train_loop(dataloader, models, optimizers, regLambda):
     size = len(dataloader.dataset)
 
@@ -140,6 +127,33 @@ class linearRegression(torch.nn.Module):
         out = self.linear(x)
         return out
 
+def polyLibraryGet(nVar, maxDegree):
+    functions = [lambda x: 1]
+    symbols = ['1']
+    for thisDegree in range(1, maxDegree + 1):
+        for variableList in itertools.combinations_with_replacement(range(nVar), thisDegree):
+            thisSymbol = ''
+            for thisVariable in variableList:
+                thisSymbol += 'x[%s] *' % str(thisVariable)
+            functions.append(eval('lambda x: ' + thisSymbol[:-2]))
+            symbols.append(thisSymbol[:-2].replace('*', ' '))
+    return functions, symbols
+
+def parseSolution(regResult, functionSymbols, ratioCutoff):
+    nVars = len(regResult)
+    odes = []
+    for i in range(nVars):
+        ode = ''
+        coefficients = regResult[i]
+        maxCoeff = max(abs(coefficients))
+        for j, thisCoeff in enumerate(coefficients):
+            if maxCoeff/abs(thisCoeff) <= ratioCutoff:
+                ode += ' + ' + str(thisCoeff) + ' * ' + functionSymbols[j]
+        ode = ('x[%s]_dot = '  % str(i)) + ode[3:]
+        odes.append(ode)
+    return odes
+
+
 # %%
 
 odeIndex = 1
@@ -147,6 +161,7 @@ learningRate = .01
 epochs = 10
 regLambda = 0
 
+basisFunctions, functionSymbols = polyLibraryGet(3, 2)
 dataloader, systemDim = dataloaderGet(odeIndex, basisFunctions)
 numBasisFunctions = len(basisFunctions)
 models = [linearRegression(numBasisFunctions, 1).cuda() for i in range(systemDim)]
@@ -162,4 +177,24 @@ print("Done!")
 
 regResult = [list(i.parameters())[0][0].cpu().detach().numpy() for i in models]
 
-# %%
+#%%
+
+ratioCutoff = 10
+parseSolution(regResult, functionSymbols, ratioCutoff)
+
+
+#%%
+'''
+basisFunctions = [
+    lambda x : 1,
+    lambda x : x[0],
+    lambda x : x[1],
+    lambda x : x[2],
+    lambda x : x[0] ** 2,
+    lambda x : x[0] * x[1],
+    lambda x : x[0] * x[2],
+    lambda x : x[1] ** 2,
+    lambda x : x[1] * x[2],
+    lambda x : x[2] ** 2
+]
+'''
