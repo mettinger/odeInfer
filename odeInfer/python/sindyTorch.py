@@ -56,6 +56,7 @@ def gridGet(bounds, steps):
     x = [np.linspace(bounds[i][0], bounds[i][1], steps[i]) for i in range(len(steps))]
     return list(itertools.product(*x))
 
+# DATASET CLASS FOR PYTORCH DATALOADER
 class datasetGet(Dataset):
     def __init__(self, odeSystem, bounds, step, basisFunctions):
 
@@ -122,7 +123,7 @@ def dataloaderGet(odeIndex, basisFunctions):
     systemDim = len(steps)
     return dataloader, systemDim
 
-# LINEAR REGRESSION FOR EACH EQUATION IN ODE SYSTEM
+# LINEAR REGRESSION MODEL (ONE FOR EACH EQUATION IN ODE SYSTEM)
 class linearRegression(torch.nn.Module):
     def __init__(self, inputSize, outputSize):
         super(linearRegression, self).__init__()
@@ -132,7 +133,7 @@ class linearRegression(torch.nn.Module):
         out = self.linear(x)
         return out
 
-# MAKE THE LISTS OF POLYNOMIAL FUNCTIONS AND STRING SYMBOLS
+# MAKE THE LISTS OF POLYNOMIAL FUNCTIONS AND STRING SYMBOLS FOR PRETTY PRINTING RESULTS
 def polyLibraryGet(nVar, maxDegree):
     functions = [lambda x: 1]
     symbols = ['1']
