@@ -185,13 +185,13 @@ for t in range(epochs):
     train_loop(dataloader, models, optimizers, l1_lambda)
 print("Done!")
 
-regressionResult = [list(i.parameters())[0][0].cpu().detach().numpy() for i in models]
+odeSymbolicEstimate = [list(i.parameters())[0][0].cpu().detach().numpy() for i in models]
 
 #%%
 
 # PRETTY PRINT THE ODE SYSTEM
 ratioCutoff = 50
-parsedSolution = parseSolution(regressionResult, functionSymbols, ratioCutoff)
+parsedSolution = parseSolution(odeSymbolicEstimate, functionSymbols, ratioCutoff)
 parsedSolution
 
 # %%
