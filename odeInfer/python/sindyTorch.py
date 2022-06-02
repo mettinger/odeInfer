@@ -103,21 +103,19 @@ def train_loop(dataloader, models, optimizers, l1_lambda):
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 # SPECIFY SYSTEM, COMPUTE TRAINING DATA, MAKE DATALOADER
-def dataloaderGet(odeIndex, basisFunctions):
+def dataloaderGet(odeFunction, basisFunctions):
 
-    if odeIndex == 0:
-        odeSystem = epileptor
+    if odeFunction == epileptor:
         bounds = [(0,5) for i in range(6)]
         steps = [6 for i in range(6)]
         batchSize = 64
-    elif odeIndex == 1:
-        odeSystem = lorenz
+    elif odeFunction == lorenz:
         bounds = [(-2,2), (-2,2), (-2,2)]
         steps = [40, 40, 40]
         batchSize = 64
 
 
-    dataset = datasetGet(odeSystem, bounds, steps, basisFunctions)
+    dataset = datasetGet(odeFunction, bounds, steps, basisFunctions)
     dataloader = DataLoader(dataset, batch_size=batchSize)
 
     systemDim = len(steps)
@@ -165,13 +163,13 @@ def parseSolution(regResult, functionSymbols, ratioCutoff):
 # %%
 
 # SET UP PARAMETERS FOR TRAINING, A LINEAR MODEL AND OPTIMIZER FOR EACH ODE EQUATION
-odeIndex = 1
+odeFunction = lorenz
 learningRate = .01
 epochs = 10
 l1_lambda = 0
 
 basisFunctions, functionSymbols = polyLibraryGet(3, 2)
-dataloader, systemDim = dataloaderGet(odeIndex, basisFunctions)
+dataloader, systemDim = dataloaderGet(odeFunction, basisFunctions)
 numBasisFunctions = len(basisFunctions)
 models = [linearRegression(numBasisFunctions, 1).cuda() for i in range(systemDim)]
 
