@@ -11,7 +11,7 @@ from torchvision.transforms import ToTensor
 
 
 import julia
-julia.install()
+#julia.install()
 from julia import DynamicalSystems
 from julia import Main
 
