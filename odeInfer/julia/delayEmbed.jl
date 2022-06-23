@@ -13,6 +13,7 @@ function lorenzTrajectory()
 end
 
 function embed(traj, w, Tmax)
+    traj = Dataset(traj)
     Y, τ_vals, ts_vals, Ls, εs = pecuzal_embedding(traj; τs = 0:Tmax, w=w, econ=true)
     return Matrix(Y), τ_vals, ts_vals, traj
 end
@@ -27,3 +28,5 @@ function lorenzEmbed(index)
     Y, τ_vals, ts_vals, traj = embed(s, theiler, Tmax)
     return Y, τ_vals, ts_vals, traj, dt
 end
+
+Y, τ_vals, ts_vals, traj, dt = lorenzEmbed(1)
