@@ -1,36 +1,50 @@
 #%%
 import numpy as np
 import pysindy as ps
-import itertools
-
-import julia
-from julia import DynamicalSystems
 from julia import Main
+import pandas as pd
+import plotly.express as px
+from epileptor import epileptor
+from scipy.integrate import solve_ivp
 
 #%%
+def plot3d(array, title):
+    df = pd.DataFrame(array)
+    fig = px.line_3d(df, x=0, y=1, z=2, title=title)
+    fig.show()
 
-# LORENZE MODEL
-def lorenz(x, y, z):
-    sigma, rho, beta = 10, 8/3, 28
-    xDot = sigma * (y - x)
-    yDot = (x * (rho - z)) - y
-    zDot = (x * y) - (beta * z)
-    return xDot, yDot, zDot
+#%%
+y0 = [0,0,0,0,0,0]
+timeStart = 0
+timeEnd = 100
 
-# %%
+numPoint = 10**4
+t_eval = np.linspace(timeStart, timeEnd, numPoint)
 
-x1s = np.linspace(-2, 2, 40)
-y1s = np.linspace(-2, 2, 40)
-zs = np.linspace(-2, 2, 40)
-grid = [np.array((x1, y1, z)) for x1 in x1s for y1 in y1s for z in zs]
+odeSolution = solve_ivp(epileptor, [timeStart, timeEnd], y0, t_eval=t_eval)
 
-x = [i.reshape((1,3)) for i in grid]
-x_dot = [np.array(lorenz(*i)).reshape((1,3)) for i in grid]
+#%%
+Main.include("../julia/delayEmbed.jl")
 
-# %%
+traj = odeSolution.y
+w = 0
+Tmax = 100
+embeddedY, τ_vals, ts_vals, traj = Main.embed(traj, w, Tmax)
 
-model = ps.SINDy()
-model.fit(x, t = None, x_dot=x_dot, multiple_trajectories=True)
-model.print()
+
+
+
+
+#%%
+Main.include("../julia/delayEmbed.jl")
+modelList = [None, None, None]
+for obs in [1,2,3]:
+    embedding, delay_values, ts_indices, trajectory, dt  = Main.lorenzEmbed(obs)
+    sparse_regression_optimizer = ps.STLSQ(threshold=0)
+    modelList[obs-1] = ps.SINDy(optimizer=sparse_regression_optimizer)
+    modelList[obs-1].fit(embedding, t=dt)
+
+#%%
+plot3d(trajectory, 'test')
 
 # %%

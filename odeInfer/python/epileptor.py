@@ -1,6 +1,7 @@
 #%%
 import numpy as np
-import pysindy as ps
+from scipy.integrate import solve_ivp
+#import pysindy as ps
 
 # %%
 
@@ -20,7 +21,9 @@ def f2(x2):
         temp = 6 * (x2 + .25)
         return temp
         
-def epileptor(x1, y1, z, x2, y2, u):
+def epileptor(t, Y):
+
+    x1, y1, z, x2, y2, u = Y
 
     x0 = -1.6
     y0 = 1
@@ -40,6 +43,9 @@ def epileptor(x1, y1, z, x2, y2, u):
 
     return x1Dot, y1Dot, zDot, x2Dot, y2Dot, uDot
 
+
+#%%
+'''
 # %%
 
 x1s = np.linspace(0,100, 10)
@@ -58,6 +64,4 @@ x = [i.reshape((1,6)) for i in x]
 model = ps.SINDy()
 model.fit(x, t = None, x_dot=x_dot, multiple_trajectories=True)
 model.print()
-
-
-# %%
+'''
