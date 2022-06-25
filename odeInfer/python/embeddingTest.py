@@ -22,16 +22,17 @@ numPoint = 10**4
 t_eval = np.linspace(timeStart, timeEnd, numPoint)
 
 odeSolution = solve_ivp(epileptor, [timeStart, timeEnd], y0, t_eval=t_eval)
+trajectory = odeSolution.y.transpose()
 
 #%%
 Main.include("../julia/delayEmbed.jl")
 
-traj = odeSolution.y
 w = 0
 Tmax = 100
-embeddedY, τ_vals, ts_vals, traj = Main.embed(traj, w, Tmax)
+embeddedY, τ_vals, ts_vals, traj = Main.embed(trajectory[:,0:6], w, Tmax)
 
-
+#%%
+plot3d(trajectory[:,0:3], 'test')
 
 
 
@@ -44,7 +45,3 @@ for obs in [1,2,3]:
     modelList[obs-1] = ps.SINDy(optimizer=sparse_regression_optimizer)
     modelList[obs-1].fit(embedding, t=dt)
 
-#%%
-plot3d(trajectory, 'test')
-
-# %%
